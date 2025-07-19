@@ -6,12 +6,25 @@
     controls.style.alignItems = 'center';
     controls.style.gap = '8px';
     controls.style.margin = '16px 0 0 0';
+    controls.style.pointerEvents = 'auto';
+    controls.style.position = 'relative';
+    controls.style.zIndex = '1000';
+    
+    // Prevent controls container from bubbling events
+    controls.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
 
     // Button container
     const buttonContainer = document.createElement('div');
     buttonContainer.style.display = 'flex';
     buttonContainer.style.justifyContent = 'center';
     buttonContainer.style.gap = '6px';
+    buttonContainer.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
 
     // Frame info container
     const frameInfo = document.createElement('div');
@@ -25,6 +38,10 @@
     sliderContainer.style.alignItems = 'center';
     sliderContainer.style.gap = '8px';
     sliderContainer.style.width = '300px';
+    sliderContainer.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
 
     const makeBtn = (label, title, handler) => {
       const btn = document.createElement('button');
@@ -36,7 +53,23 @@
       btn.style.borderRadius = '4px';
       btn.style.border = '1px solid #ccc';
       btn.style.background = '#fff';
-      btn.onclick = handler;
+      btn.style.position = 'relative';
+      btn.style.zIndex = '1001';
+      
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        handler(event);
+      });
+      
+      btn.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+      });
+      
+      btn.addEventListener('mouseup', (event) => {
+        event.stopPropagation();
+      });
+      
       return btn;
     };
 
@@ -48,6 +81,8 @@
     slider.value = '0';
     slider.style.flex = '1';
     slider.style.cursor = 'pointer';
+    slider.style.position = 'relative';
+    slider.style.zIndex = '1001';
 
     // Frame number labels
     const currentFrameLabel = document.createElement('span');
@@ -70,19 +105,25 @@
       slider.value = currentFrame;
     };
 
-    // Slider event handlers
+    // Slider event handlers with proper event handling
     let isSliding = false;
     
-    slider.addEventListener('mousedown', () => {
+    slider.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       isSliding = true;
       player.pause();
     });
 
-    slider.addEventListener('mouseup', () => {
+    slider.addEventListener('mouseup', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       isSliding = false;
     });
 
-    slider.addEventListener('input', () => {
+    slider.addEventListener('input', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (isSliding) {
         const frameIndex = parseInt(slider.value);
         player.move_to(frameIndex);
@@ -91,7 +132,9 @@
     });
 
     // Double-click slider to jump to specific frame
-    slider.addEventListener('dblclick', () => {
+    slider.addEventListener('dblclick', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       const frameNumber = prompt(`Enter frame number (1-${player.get_length()}):`);
       if (frameNumber && !isNaN(frameNumber)) {
         const frameIndex = Math.max(0, Math.min(parseInt(frameNumber) - 1, player.get_length() - 1));
@@ -197,9 +240,7 @@
       }
     };
 
-    // Initial update
     updateFrameInfo();
-
     return controls;
   }
 
