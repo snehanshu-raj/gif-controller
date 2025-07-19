@@ -1,4 +1,30 @@
 (function() {
+  // Skip execution on certain domains/sites
+  const skipDomains = [
+    'mail.google.com',
+    'gmail.com', 
+    'accounts.google.com',
+    'drive.google.com',
+    'docs.google.com',
+    'sheets.google.com',
+    'slides.google.com',
+    'youtube.com',
+    'twitter.com',
+    'x.com',
+    'facebook.com',
+    'instagram.com',
+    'linkedin.com'
+  ];
+
+  // Check if current domain should be skipped
+  const shouldSkipDomain = skipDomains.some(domain => 
+    window.location.hostname.includes(domain)
+  );
+
+  if (shouldSkipDomain) {
+    return; // Exit early, don't process any GIFs on these domains
+  }
+
   function createControls(player) {
     const controls = document.createElement('div');
     controls.style.display = 'flex';
