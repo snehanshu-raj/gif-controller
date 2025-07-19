@@ -13,9 +13,11 @@ Instead of endlessly looping animations that can be distracting or annoying, thi
 - Supports both static and dynamically-loaded GIFs
 - User-friendly UI/UX with minimal impact on page layout
 
-## Demo
-- ![GIF Controller Demo](assets/demo/demo.gif)
+## Try it OUT!
 - **[Try the demo here!](https://snehanshu-raj.github.io/chrome-gif-controller/)** 🎯
+
+## Demo
+[GIF Controller Demo](assets/demo/demo.gif)
 
 ## Project Structure
 ```
