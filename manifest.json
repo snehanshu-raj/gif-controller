@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Chrome GIF Canvas Player",
+  "name": "Web GIF Controller",
   "version": "1.0",
   "description": "A Chrome extension that replaces GIF images with a custom HTML5 canvas player featuring playback controls.",
   "permissions": [
