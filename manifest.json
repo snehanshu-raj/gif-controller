@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome GIF Canvas Player",
+  "version": "1.0",
+  "description": "A Chrome extension that replaces GIF images with a custom HTML5 canvas player featuring playback controls.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/lib/libgif.js", "src/content/contentScript.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/ui/controls.html", "src/ui/controls.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}
