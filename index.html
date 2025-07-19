@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web GIF Controller - Try Before You Install</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .demo-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px dashed #dee2e6;
+            text-align: center;
+        }
+
+        .upload-area {
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            background: #0056b3;
+        }
+
+        .file-input-label.loading {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .url-input-section {
+            margin-top: 20px;
+        }
+
+        .url-input {
+            width: 300px;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .load-btn {
+            padding: 12px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .load-btn:hover:not(.loading) {
+            background: #1e7e34;
+        }
+
+        .load-btn.loading {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .gif-player-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+            display: none;
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .loading-message {
+            color: #007bff;
+            margin-top: 15px;
+            padding: 10px;
+            background: #d1ecf1;
+            border-radius: 5px;
+            display: none;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+
+        .install-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.3s;
+        }
+
+        .install-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* GIF Controls Styles (same as extension) */
+        .gif-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin: 16px 0 0 0;
+            pointer-events: auto;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .gif-controls button {
+            padding: 6px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: #fff;
+            position: relative;
+            z-index: 1001;
+            transition: background-color 0.2s;
+        }
+
+        .gif-controls button:hover {
+            background: #f5f5f5;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .frame-info {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 300px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            cursor: pointer;
+            position: relative;
+            z-index: 1001;
+        }
+
+        .slider-container span {
+            font-size: 11px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .url-input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .slider-container {
+                width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <img src="assets/icons/icon48.png" alt="GIF Controller" 
+                    style="width:3em; height:3em; vertical-align:middle; margin-right:0.5em;"> 
+                Web GIF Controller
+            </h1>
+            <p>Ever felt irritated with GIFs non-stop playing and not stopping?</p>
+            <p><strong>Try our GIF controls before installing the Chrome extension!</strong></p>
+        </div>
+
+        <div class="demo-section">
+            <h3>📁 Upload a GIF or Provide URL</h3>
+            <div class="upload-area">
+                <div class="file-input-wrapper">
+                    <input type="file" id="gifFile" class="file-input" accept=".gif,image/gif">
+                    <label for="gifFile" class="file-input-label" id="fileLabel">📤 Choose GIF File</label>
+                </div>
+                
+                <div class="url-input-section">
+                    <p>Or paste a GIF URL:</p>
+                    <input type="url" id="gifUrl" class="url-input" placeholder="https://example.com/animation.gif">
+                    <button onclick="loadGifFromUrl()" class="load-btn" id="loadBtn">Load GIF</button>
+                </div>
+            </div>
+            
+            <div class="loading-message" id="loadingMessage"></div>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <div id="gifPlayerContainer" class="gif-player-container">
+            <div id="canvasContainer"></div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">⏸️</div>
+                <h4>Pause & Play</h4>
+                <p>Stop annoying auto-playing GIFs with one click</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎚️</div>
+                <h4>Frame Scrubbing</h4>
+                <p>Navigate through any frame with precision slider</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h4>Frame by Frame</h4>
+                <p>Step forward and backward through each frame</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h4>Auto Detection</h4>
+                <p>Automatically detects and controls all GIFs on any webpage</p>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h3>Ready to Control All GIFs on the Web?</h3>
+            <p>Install our Chrome extension and never be distracted by auto-playing GIFs again!</p>
+            <a href="https://github.com/snehanshu-raj/chrome-gif-controller" class="install-btn">
+                🔗 Get Chrome Extension
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js"></script>
+    <script>
+        let currentPlayer = null;
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const loadingDiv = document.getElementById('loadingMessage');
+            
+            loadingDiv.style.display = 'none';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showLoading(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const loadingDiv = document.getElementById('loadingMessage');
+            
+            errorDiv.style.display = 'none';
+            loadingDiv.innerHTML = `<span class="spinner"></span>${message}`;
+            loadingDiv.style.display = 'block';
+        }
+
+        function hideLoading() {
+            const loadingDiv = document.getElementById('loadingMessage');
+            loadingDiv.style.display = 'none';
+        }
+
+        function setLoadingState(isLoading) {
+            const loadBtn = document.getElementById('loadBtn');
+            const fileLabel = document.getElementById('fileLabel');
+            const fileInput = document.getElementById('gifFile');
+            
+            if (isLoading) {
+                loadBtn.textContent = 'Loading...';
+                loadBtn.classList.add('loading');
+                loadBtn.disabled = true;
+                
+                fileLabel.innerHTML = '<span class="spinner"></span>Processing...';
+                fileLabel.classList.add('loading');
+                fileInput.disabled = true;
+            } else {
+                loadBtn.textContent = 'Load GIF';
+                loadBtn.classList.remove('loading');
+                loadBtn.disabled = false;
+                
+                fileLabel.textContent = '📤 Choose GIF File';
+                fileLabel.classList.remove('loading');
+                fileInput.disabled = false;
+            }
+        }
+
+        function createControls(player) {
+            const controls = document.createElement('div');
+            controls.className = 'gif-controls';
+            
+            // Frame info container
+            const frameInfo = document.createElement('div');
+            frameInfo.className = 'frame-info';
+
+            // Slider container
+            const sliderContainer = document.createElement('div');
+            sliderContainer.className = 'slider-container';
+
+            // Button container
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'button-container';
+
+            const makeBtn = (label, title, handler) => {
+                const btn = document.createElement('button');
+                btn.textContent = label;
+                btn.title = title;
+                btn.onclick = (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handler(event);
+                };
+                return btn;
+            };
+
+            // Create slider/scrubber
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.min = '0';
+            slider.max = player.get_length() - 1;
+            slider.value = '0';
+
+            // Frame number labels
+            const currentFrameLabel = document.createElement('span');
+            const totalFramesLabel = document.createElement('span');
+
+            const updateFrameInfo = () => {
+                const currentFrame = player.get_current_frame();
+                const totalFrames = player.get_length();
+                currentFrameLabel.textContent = currentFrame + 1;
+                totalFramesLabel.textContent = totalFrames;
+                frameInfo.textContent = `Frame ${currentFrame + 1} of ${totalFrames}`;
+                slider.value = currentFrame;
+            };
+
+            // Slider event handlers
+            let isSliding = false;
+            
+            slider.addEventListener('mousedown', () => {
+                isSliding = true;
+                player.pause();
+            });
+
+            slider.addEventListener('mouseup', () => {
+                isSliding = false;
+            });
+
+            slider.addEventListener('input', () => {
+                if (isSliding) {
+                    const frameIndex = parseInt(slider.value);
+                    player.move_to(frameIndex);
+                    updateFrameInfo();
+                }
+            });
+
+            // Double-click slider to jump to specific frame
+            slider.addEventListener('dblclick', (event) => {
+                event.preventDefault();
+                const frameNumber = prompt(`Enter frame number (1-${player.get_length()}):`);
+                if (frameNumber && !isNaN(frameNumber)) {
+                    const frameIndex = Math.max(0, Math.min(parseInt(frameNumber) - 1, player.get_length() - 1));
+                    player.move_to(frameIndex);
+                    updateFrameInfo();
+                }
+            });
+
+            // Create buttons
+            const firstBtn = makeBtn('⏪', 'First Frame', () => {
+                player.pause();
+                player.move_to(0);
+                updateFrameInfo();
+            });
+
+            const prevBtn = makeBtn('⏮️', 'Previous Frame', () => {
+                player.pause();
+                player.move_relative(-1);
+                updateFrameInfo();
+            });
+
+            const playBtn = makeBtn('▶️', 'Play', () => {
+                player.play();
+            });
+
+            const pauseBtn = makeBtn('⏸️', 'Pause', () => {
+                player.pause();
+            });
+
+            const stopBtn = makeBtn('⏹️', 'Stop', () => {
+                player.pause();
+                player.move_to(0);
+                updateFrameInfo();
+            });
+
+            const nextBtn = makeBtn('⏭️', 'Next Frame', () => {
+                player.pause();
+                player.move_relative(1);
+                updateFrameInfo();
+            });
+
+            const lastBtn = makeBtn('⏩', 'Last Frame', () => {
+                player.pause();
+                player.move_to(player.get_length() - 1);
+                updateFrameInfo();
+            });
+
+            sliderContainer.appendChild(currentFrameLabel);
+            sliderContainer.appendChild(slider);
+            sliderContainer.appendChild(totalFramesLabel);
+
+            buttonContainer.append(firstBtn, prevBtn, playBtn, pauseBtn, stopBtn, nextBtn, lastBtn);
+
+            controls.appendChild(frameInfo);
+            controls.appendChild(sliderContainer);
+            controls.appendChild(buttonContainer);
+
+            // Monitor playback to update slider during play
+            let playbackMonitor = null;
+            const originalPlay = player.play;
+            player.play = function() {
+                originalPlay.call(this);
+                if (playbackMonitor) clearInterval(playbackMonitor);
+                playbackMonitor = setInterval(() => {
+                    if (!isSliding && player.get_playing()) {
+                        updateFrameInfo();
+                    }
+                }, 50);
+            };
+
+            const originalPause = player.pause;
+            player.pause = function() {
+                originalPause.call(this);
+                if (playbackMonitor) {
+                    clearInterval(playbackMonitor);
+                    playbackMonitor = null;
+                }
+            };
+
+            const originalMoveToCallback = player.move_to;
+            player.move_to = function(frameIndex) {
+                originalMoveToCallback.call(this, frameIndex);
+                updateFrameInfo();
+            };
+
+            const originalMoveRelativeCallback = player.move_relative;
+            player.move_relative = function(delta) {
+                originalMoveRelativeCallback.call(this, delta);
+                updateFrameInfo();
+            };
+
+            updateFrameInfo();
+            return controls;
+        }
+
+        function loadGif(src) {
+            const container = document.getElementById('canvasContainer');
+            const playerContainer = document.getElementById('gifPlayerContainer');
+            
+            // Show loading state
+            showLoading('Loading GIF...');
+            setLoadingState(true);
+            
+            // Hide player container and clear content
+            playerContainer.style.display = 'none';
+            container.innerHTML = '';
+            
+            // Create hidden image for SuperGif
+            const img = document.createElement('img');
+            img.src = src;
+            img.style.display = 'none';
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+                showLoading('Processing GIF frames...');
+                
+                try {
+                    const player = new SuperGif({
+                        gif: img,
+                        auto_play: false,
+                        loop_mode: false,
+                        progressbar_height: 0
+                    });
+
+                    player.load(() => {
+                        const canvas = player.get_canvas();
+                        canvas.style.maxWidth = '100%';
+                        canvas.style.height = 'auto';
+                        canvas.style.border = '2px solid #dee2e6';
+                        canvas.style.borderRadius = '10px';
+                        
+                        container.appendChild(canvas);
+                        
+                        const controls = createControls(player);
+                        container.appendChild(controls);
+                        
+                        // Hide loading and show player
+                        hideLoading();
+                        setLoadingState(false);
+                        playerContainer.style.display = 'block';
+                        currentPlayer = player;
+                        
+                        // Scroll to the player
+                        playerContainer.scrollIntoView({ behavior: 'smooth' });
+                    });
+                } catch (error) {
+                    hideLoading();
+                    setLoadingState(false);
+                    showError('Error loading GIF. Please make sure it\'s a valid GIF file.');
+                    console.error('SuperGif error:', error);
+                }
+            };
+            
+            img.onerror = () => {
+                hideLoading();
+                setLoadingState(false);
+                showError('Failed to load GIF. Please check the URL or try a different file.');
+            };
+        }
+
+        function loadGifFromUrl() {
+            const urlInput = document.getElementById('gifUrl');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showError('Please enter a GIF URL');
+                return;
+            }
+            
+            if (!url.toLowerCase().includes('.gif')) {
+                showError('Please enter a valid GIF URL (must end with .gif)');
+                return;
+            }
+            
+            loadGif(url);
+        }
+
+        // File upload handler
+        document.getElementById('gifFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            
+            if (!file) return;
+            
+            if (!file.type.includes('gif')) {
+                showError('Please select a GIF file');
+                return;
+            }
+            
+            showLoading('Reading file...');
+            setLoadingState(true);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                loadGif(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+</body>
+</html>

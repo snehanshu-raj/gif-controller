@@ -14,7 +14,8 @@ Instead of endlessly looping animations that can be distracting or annoying, thi
 - User-friendly UI/UX with minimal impact on page layout
 
 ## Demo
-![GIF Controller Demo](assets/demo/demo.gif)
+- ![GIF Controller Demo](assets/demo/demo.gif)
+- **[Try the demo here!](https://snehanshu-raj.github.io/chrome-gif-controller/)** 🎯
 
 ## Project Structure
 ```
@@ -57,5 +58,6 @@ Once the extension is installed, it will automatically detect GIF images on any 
 - Revert to the original GIF `<img>` element if desired.
 - Support for themes or UI customization for controls.
 
-## Idea
-- Project idea from Dr. Saty Raghavachary sir, CSE Dept., USC
+## Acknowledgments
+- Project idea from **[Dr. Saty Raghavachary](https://www.linkedin.com/in/satychary/)** sir, CSE Dept., USC
+- Built with [libgif-js](https://github.com/buzzfeed/libgif-js) for GIF parsing
