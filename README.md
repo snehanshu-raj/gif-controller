@@ -14,7 +14,7 @@ Instead of endlessly looping animations that can be distracting or annoying, thi
 - User-friendly UI/UX with minimal impact on page layout
 
 ## Demo
-![GIF Controller Demo](assets/demo/extension-demo.gif)
+![GIF Controller Demo](assets/demo/demo.gif)
 
 ## Project Structure
 ```
