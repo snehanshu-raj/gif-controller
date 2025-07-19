@@ -17,7 +17,7 @@ Instead of endlessly looping animations that can be distracting or annoying, thi
 - **[Try the demo here!](https://snehanshu-raj.github.io/chrome-gif-controller/)** 🎯
 
 ## Demo
-[GIF Controller Demo](assets/demo/demo.gif)
+![GIF Controller Demo](assets/demo/demo.gif)
 
 ## Project Structure
 ```
