@@ -13,16 +13,17 @@
     'x.com',
     'facebook.com',
     'instagram.com',
-    'linkedin.com'
+    'linkedin.com',
+    'leetcode.com'
   ];
-
+ 
   // Check if current domain should be skipped
   const shouldSkipDomain = skipDomains.some(domain => 
     window.location.hostname.includes(domain)
   );
 
   if (shouldSkipDomain) {
-    return; // Exit early, don't process any GIFs on these domains
+    return;
   }
 
   function createControls(player) {
@@ -133,31 +134,25 @@
 
     // Slider event handlers with proper event handling
     let isSliding = false;
-    
+
     slider.addEventListener('mousedown', (event) => {
-      event.preventDefault();
       event.stopPropagation();
       isSliding = true;
       player.pause();
     });
 
     slider.addEventListener('mouseup', (event) => {
-      event.preventDefault();
       event.stopPropagation();
       isSliding = false;
     });
 
     slider.addEventListener('input', (event) => {
-      event.preventDefault();
       event.stopPropagation();
-      if (isSliding) {
-        const frameIndex = parseInt(slider.value);
-        player.move_to(frameIndex);
-        updateFrameInfo();
-      }
+      const frameIndex = parseInt(slider.value);
+      player.move_to(frameIndex);
+      updateFrameInfo();
     });
 
-    // Double-click slider to jump to specific frame
     slider.addEventListener('dblclick', (event) => {
       event.preventDefault();
       event.stopPropagation();
