@@ -1,4 +1,4 @@
-# Chrome GIF Controller
+# GIF Controller
 
 ## Overview
 Ever felt **irritated** with GIFs non-stop playing and not stopping? The Chrome GIF Controller is a Chrome extension that solves this exact problem by detecting GIF images on any webpage giving control over them.
@@ -14,7 +14,7 @@ Instead of endlessly looping animations that can be distracting or annoying, thi
 - User-friendly UI/UX with minimal impact on page layout
 
 ## Try it OUT!
-- **[Try the demo here!](https://snehanshu-raj.github.io/chrome-gif-controller/)** 🎯
+- **[Try the demo here!](https://snehanshu-raj.github.io/gif-controller/)** 🎯
 
 ## Demo
 ![GIF Controller Demo](assets/demo/demo.gif)
@@ -43,7 +43,7 @@ chrome-gif-controller
 ## Installation
 1. Clone the repository:
    ```
-   git clone https://github.com/snehanshu-raj/chrome-gif-controller.git
+   git clone https://github.com/snehanshu-raj/gif-controller.git
    ```
 2. Navigate to the extension directory:
    ```
@@ -51,7 +51,7 @@ chrome-gif-controller
    ```
 3. Open Chrome and go to `chrome://extensions/`.
 4. Enable "Developer mode" in the top right corner.
-5. Click on "Load unpacked" and select the `chrome-gif-controller` directory.
+5. Click on "Load unpacked" and select the `gif-controller` directory.
 
 ## Usage
 Once the extension is installed, it will automatically detect GIF images on any webpage. The GIFs will be replaced with the canvas player, allowing you to control playback using the provided controls.
