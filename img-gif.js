@@ -17,6 +17,7 @@ class ImgGif extends HTMLElement {
       .frame-info { font-size: 0.875rem; color: #666; }
     `;
 
+
     this.canvas = document.createElement('canvas');
     this.controls = document.createElement('div');
     this.controls.classList.add('controls');
@@ -46,13 +47,13 @@ class ImgGif extends HTMLElement {
     };
 
     // Control buttons
-    this.btnFirst = createButton('⏪', 'First Frame', () => this._gotoFrame(0));
-    this.btnPrev  = createButton('◀️', 'Previous Frame', () => this._stepFrame(-1));
-    this.btnPlay  = createButton('▶️', 'Play', () => this._play());
-    this.btnPause = createButton('⏸️', 'Pause', () => this._pause());
-    this.btnStop  = createButton('⏹️', 'Stop', () => this._stop());
-    this.btnNext  = createButton('▶️', 'Next Frame', () => this._stepFrame(1));
-    this.btnLast  = createButton('⏩', 'Last Frame', () => this._gotoLastFrame());
+    this.btnFirst = createButton('⏮️', 'First Frame', () => this._gotoFrame(0),    'btn-first');
+    this.btnPrev  = createButton('⏪',  'Previous Frame', () => this._stepFrame(-1), 'btn-prev');
+    this.btnPlay  = createButton('▶️',  'Play',           () => this._play(),        'btn-play');
+    this.btnPause = createButton('⏸️',  'Pause',          () => this._pause());
+    this.btnStop  = createButton('⏹️',  'Stop',           () => this._stop());
+    this.btnNext  = createButton('⏩',  'Next Frame',      () => this._stepFrame(1),  'btn-next');
+    this.btnLast  = createButton('⏭️',  'Last Frame',     () => this._gotoLastFrame(), 'btn-last');
 
     // Button row
     const buttonRow = document.createElement('div');
@@ -163,7 +164,7 @@ class ImgGif extends HTMLElement {
       gif: img,
       canvas: this.canvas,
       auto_play: false,
-      loop_mode: false,
+      loop_mode: true,
       progressbar_height: 0,
     });
 
@@ -213,17 +214,24 @@ class ImgGif extends HTMLElement {
   _stepFrame(delta) {
     if (!this.player) return;
     this.player.pause();
-    this.player.move_relative(delta);
+    const length = this.player.get_length();
+    const current = this.player.get_current_frame();
+    const nextFrame = (current + delta + length) % length; // wrap around
+    this.player.move_to(nextFrame);
     this._stopPlaybackTimer();
     this._updateUI();
   }
+
   _gotoFrame(frame) {
     if (!this.player) return;
+    const length = this.player.get_length();
+    const wrappedFrame = ((frame % length) + length) % length; // wrap around positive
     this.player.pause();
-    this.player.move_to(frame);
+    this.player.move_to(wrappedFrame);
     this._stopPlaybackTimer();
     this._updateUI();
   }
+
   _gotoLastFrame() {
     if (!this.player) return;
     this.player.pause();
