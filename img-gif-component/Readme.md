@@ -31,7 +31,7 @@ A **custom HTML element** `<img-gif>` for easily displaying and controlling GIF 
 Include the script in your HTML:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/snehanshu-raj/gif-controller@main/img-gif.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/snehanshu-raj/gif-controller@6a5a730/img-gif.js"></script>
 ```
 
 Then use the custom tag anywhere in your page:
@@ -52,7 +52,7 @@ Replace `"cool.gif"` with your own GIF URL or path.
   <title>img-gif Component Test</title>
 </head>
 <body>
-  <script src="https://cdn.jsdelivr.net/gh/snehanshu-raj/gif-controller@main/img-gif.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/snehanshu-raj/gif-controller@6a5a730/img-gif.js"></script>
   <div>
     <img-gif src="cool.gif"></img-gif>
   </div>
@@ -60,6 +60,28 @@ Replace `"cool.gif"` with your own GIF URL or path.
 </html>
 ```
 
+### **Updating to the Latest Version**
+
+jsDelivr may cache files referenced with `@main` for several hours, so sometimes recent updates on GitHub main branch may not appear right away when you use:
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/snehanshu-raj/gif-controller@main/img-gif.js"></script>
+```
+
+**If you need the very latest version:**
+
+1. **Check the most recent commit hash** for my file on GitHub:
+[https://github.com/snehanshu-raj/gif-controller/blob/main/img-gif.js](https://github.com/snehanshu-raj/gif-controller/blob/main/img-gif.js)
+2. **Copy the commit hash** (for example, `6a5a730` : this is the current version).
+3. **Use the commit hash instead of `main` in your script tag:**
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/snehanshu-raj/gif-controller@6a5a730/img-gif.js"></script>
+```
+
+This ensures you always get the exact, current version of the file, bypassing CDN cache delays.
+
+**Tip:** Always use the commit-based link for instant updates or development and `@main` for more stable, production use where immediate updates are not critical.
 
 ## Notes
 
@@ -67,7 +89,6 @@ Replace `"cool.gif"` with your own GIF URL or path.
 - The control buttons and slider allow you to interact with frames conveniently.
 - The component registers a new custom tag `<img-gif>`, making it easy to embed anywhere HTML is allowed.
 - Works in all modern browsers supporting Web Components.
-
 
 ## Installation
 
