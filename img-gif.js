@@ -2,7 +2,7 @@ class ImgGif extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-
+    this._ensureLibGifLoaded();
     // Style
     const style = document.createElement('style');
     style.textContent = `
@@ -107,68 +107,80 @@ class ImgGif extends HTMLElement {
     }
   }
 
-  _loadGif(src) {
-    this._stopPlaybackTimer();
+  _ensureLibGifLoaded() {
+    if (!window._libgifLoadedPromise) {
+      if (window.SuperGif) {
+        window._libgifLoadedPromise = Promise.resolve();
+      } else {
+        window._libgifLoadedPromise = new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js';
+          script.onload = () => resolve();
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+    }
+    return window._libgifLoadedPromise;
+  }
 
-    if (this.player) {
-        this.player.pause();
-        this.player = null;
+  _loadGif(src) {
+  this._stopPlaybackTimer();
+
+  if (this.player) {
+    this.player.pause();
+    this.player = null;
+  }
+
+  // Remove previous hidden <img>
+  Array.from(this.shadowRoot.querySelectorAll('img[data-gif-img]')).forEach(img => img.remove());
+
+  // New hidden <img>
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = src;
+  img.style.display = 'none';
+  img.setAttribute('data-gif-img', 'true');
+  this.shadowRoot.appendChild(img);
+
+  // PROMISE for img load
+  const imgLoaded = new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject('Failed to load GIF image.');
+  });
+
+  // Wait for both: libgif.js loaded & image loaded
+  Promise.all([
+    this._ensureLibGifLoaded(),
+    imgLoaded
+  ]).then(() => {
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+      this.canvas = null;
     }
 
-    // Remove any previously appended hidden <img> elements to avoid duplicates
-    Array.from(this.shadowRoot.querySelectorAll('img[data-gif-img]')).forEach(img => img.remove());
+    this.player = new window.SuperGif({
+      gif: img,
+      canvas: this.canvas,
+      auto_play: false,
+      loop_mode: false,
+      progressbar_height: 0,
+    });
 
-    // Create the hidden image for libgif to decode GIF frames
-    const img = new Image();
-    img.crossOrigin = 'anonymous';  // Allow CORS requests if needed
-    img.src = src;
-
-    // Use display:none to completely hide it (no layout space reserved)
-    img.style.display = 'none';
-
-    // Add a data attribute to easily find/remove this img later
-    img.setAttribute('data-gif-img', 'true');
-
-    // Append to shadow root so it's attached to DOM before SuperGif.load
-    this.shadowRoot.appendChild(img);
-
-    img.onload = () => {
-        if (this.canvas && this.canvas.parentNode) {
-            this.canvas.parentNode.removeChild(this.canvas);
-            this.canvas = null;
-        }
-
-        this.player = new window.SuperGif({
-            gif: img,
-            canvas: this.canvas,
-            auto_play: false,
-            loop_mode: false,
-            progressbar_height: 0,
-        });
-
-        this.player.load(() => {
-            this.player.move_to(0); // draw first frame explicitly
-
-            // // Remove the hidden img now from DOM — no longer needed and prevents blank block
-            // if (img.parentNode) {
-            //     img.parentNode.removeChild(img);
-            // }
-
-            this.slider.min = 0;
-            this.slider.max = this.player.get_length() - 1;
-            this.slider.value = 0;
-            this.slider.disabled = false;
-
-            this._updateUI();
-        });
-    };
-
-    img.onerror = () => {
-        this.frameInfo.textContent = 'Failed to load GIF.';
-        this.slider.disabled = true;
-        console.error('Failed to load GIF at:', src);
-    };
-  } 
+    this.player.load(() => {
+      this.player.move_to(0);
+      this.slider.min = 0;
+      this.slider.max = this.player.get_length() - 1;
+      this.slider.value = 0;
+      this.slider.disabled = false;
+      this._updateUI();
+    });
+  }).catch((err) => {
+    this.frameInfo.textContent = typeof err === 'string' ? err : 'Failed to load GIF or GIF library.';
+    this.slider.disabled = true;
+    console.error('Load error:', err);
+  });
+}
 
 
   _updateUI() {
