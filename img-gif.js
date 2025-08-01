@@ -135,13 +135,18 @@
                     const wrapped = ((f % length) + length) % length;
                     player.move_to(wrapped);
                     setCurrentFrame(wrapped);
-                };
+                };  
 
                 const stop = () => {
                     if (!player || !isLoaded) return;
-                    player.pause();
-                    gotoFrame(0);
-                    setIsPlaying(false);
+                    if (isPlaying) {
+                        player.pause();
+                        gotoFrame(0);
+                        setIsPlaying(false);
+                    } else {
+                        player.play();
+                        setIsPlaying(true);
+                    }
                 };
 
                 const next = () => gotoFrame(currentFrame + 1);
@@ -240,7 +245,7 @@
                     React.createElement('div', { style: { display: 'flex', gap: '8px' } },
                         React.createElement('button', { onClick: e => { e.stopPropagation(); first(); }, style: buttonStyle }, '⏮️'),
                         React.createElement('button', { onClick: e => { e.stopPropagation(); prev(); }, style: buttonStyle }, '⏪'),
-                        React.createElement('button', { onClick: e => { e.stopPropagation(); stop(); }, style: buttonStyle }, '⏹️'),
+                        React.createElement('button', { onClick: e => { e.stopPropagation(); stop(); }, style: buttonStyle }, '⏯️'),
                         React.createElement('button', { onClick: e => { e.stopPropagation(); next(); }, style: buttonStyle }, '⏩'),
                         React.createElement('button', { onClick: e => { e.stopPropagation(); last(); }, style: buttonStyle }, '⏭️')
                     )
