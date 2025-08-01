@@ -1,260 +1,306 @@
-class ImgGif extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._ensureLibGifLoaded();
-    // Style
-    const style = document.createElement('style');
-    style.textContent = `
-      :host { display: inline-block; max-width: 100%; font-family: system-ui,sans-serif; user-select: none; }
-      canvas { border: 2px solid #667eea; border-radius: 8px; width: 100%; height: auto; display: block; }
-      .controls { margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-      .button-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-      button { cursor: pointer; padding: 6px 12px; font-size: 1.2rem; border-radius: 5px; border: 1px solid #667eea;
-        background: white; color: #667eea; transition: background-color 0.2s; user-select: none;}
-      button:hover { background: #667eea; color: white; }
-      input[type="range"] { width: 280px; cursor: pointer; }
-      .frame-info { font-size: 0.875rem; color: #666; }
-    `;
-
-
-    this.canvas = document.createElement('canvas');
-    this.controls = document.createElement('div');
-    this.controls.classList.add('controls');
-
-    // Frame info display
-    this.frameInfo = document.createElement('div');
-    this.frameInfo.classList.add('frame-info');
-
-    // Slider for frame navigation
-    this.slider = document.createElement('input');
-    this.slider.type = 'range';
-    this.slider.min = 0;
-    this.slider.value = 0;
-    this.slider.disabled = true;
-
-    // Button helper
-    const createButton = (label, title, handler) => {
-      const btn = document.createElement('button');
-      btn.textContent = label;
-      btn.title = title;
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handler();
-      });
-      return btn;
-    };
-
-    // Control buttons
-    this.btnFirst = createButton('⏮️', 'First Frame', () => this._gotoFrame(0),    'btn-first');
-    this.btnPrev  = createButton('⏪',  'Previous Frame', () => this._stepFrame(-1), 'btn-prev');
-    this.btnPlay  = createButton('▶️',  'Play',           () => this._play(),        'btn-play');
-    this.btnPause = createButton('⏸️',  'Pause',          () => this._pause());
-    this.btnStop  = createButton('⏹️',  'Stop',           () => this._stop());
-    this.btnNext  = createButton('⏩',  'Next Frame',      () => this._stepFrame(1),  'btn-next');
-    this.btnLast  = createButton('⏭️',  'Last Frame',     () => this._gotoLastFrame(), 'btn-last');
-
-    // Button row
-    const buttonRow = document.createElement('div');
-    buttonRow.classList.add('button-row');
-    [this.btnFirst, this.btnPrev, this.btnPlay, this.btnPause, this.btnStop, this.btnNext, this.btnLast]
-      .forEach(btn => buttonRow.appendChild(btn));
-
-    // Controls composition
-    this.controls.append(this.frameInfo, this.slider, buttonRow);
-    this.shadowRoot.append(style, this.canvas, this.controls);
-
-    // State
-    this.player = null;
-    this._playbackInterval = null;
-    this._isSliding = false;
-
-    // Slider events
-    this.slider.addEventListener('input', (e) => {
-      if (this.player) {
-        this._isSliding = true;
-        this.player.pause();
-        this.player.move_to(Number(e.target.value));
-        this._updateUI();
-      }
-    });
-    this.slider.addEventListener('change', () => {
-      this._isSliding = false;
-      this._updateUI();
-    });
-
-    this.slider.addEventListener('dblclick', () => {
-      if (!this.player) return;
-      const total = this.player.get_length();
-      const input = prompt(`Enter frame number (1-${total}):`);
-      if (!input) return;
-      const val = Number(input);
-      if (isNaN(val)) return;
-      this.player.move_to(Math.min(Math.max(val - 1, 0), total - 1));
-      this._updateUI();
-    });
-  }
-
-  static get observedAttributes() { return ['src']; }
-
-  connectedCallback() {
-    if (this.hasAttribute('src')) this._loadGif(this.getAttribute('src'));
-  }
-
-  attributeChangedCallback(name, oldVal, newVal) {
-    if (name === 'src' && newVal !== oldVal) {
-      this._loadGif(newVal);
-    }
-  }
-
-  _ensureLibGifLoaded() {
-    if (!window._libgifLoadedPromise) {
-      if (window.SuperGif) {
-        window._libgifLoadedPromise = Promise.resolve();
-      } else {
-        window._libgifLoadedPromise = new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js';
-          script.onload = () => resolve();
-          script.onerror = reject;
-          document.head.appendChild(script);
+(function () {
+    function loadScript(url) {
+        return new Promise((resolve, reject) => {
+            if ([...document.scripts].some(s => s.src === url)) return resolve();
+            const script = document.createElement('script');
+            script.src = url;
+            script.crossOrigin = 'anonymous';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
         });
-      }
-    }
-    return window._libgifLoadedPromise;
-  }
+    } 
 
-  _loadGif(src) {
-  this._stopPlaybackTimer();
+    const reactCDN = 'https://unpkg.com/react@18/umd/react.development.js';
+    const reactDomCDN = 'https://unpkg.com/react-dom@18/umd/react-dom.development.js';
+    const libGifCDN = 'https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js@master/libgif.js';
 
-  if (this.player) {
-    this.player.pause();
-    this.player = null;
-  }
+    Promise.resolve()
+        .then(() => loadScript(reactCDN))
+        .then(() => loadScript(reactDomCDN))
+        .then(() => loadScript(libGifCDN))
+        .then(() => {
+            const { useState, useEffect, useRef } = window.React;
 
-  // Remove previous hidden <img>
-  Array.from(this.shadowRoot.querySelectorAll('img[data-gif-img]')).forEach(img => img.remove());
+            function GifPlayer({ src }) {
+                const containerRef = useRef(null);
+                const [player, setPlayer] = useState(null);
+                const [frameCount, setFrameCount] = useState(0);
+                const [currentFrame, setCurrentFrame] = useState(0);
+                const [isPlaying, setIsPlaying] = useState(false);
+                const [isHovered, setIsHovered] = useState(false);
+                const [isLoaded, setIsLoaded] = useState(false);
+                const [originalGIFwidth, setOriginalGIFwidth] = useState(0);
 
-  // New hidden <img>
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = src;
-  img.style.display = 'none';
-  img.setAttribute('data-gif-img', 'true');
-  this.shadowRoot.appendChild(img);
+                useEffect(() => {
+                    if (!src || !containerRef.current) return;
 
-  // PROMISE for img load
-  const imgLoaded = new Promise((resolve, reject) => {
-    img.onload = resolve;
-    img.onerror = () => reject('Failed to load GIF image.');
-  });
+                    let superGif = null;
+                    let hiddenImg = null;
 
-  // Wait for both: libgif.js loaded & image loaded
-  Promise.all([
-    this._ensureLibGifLoaded(),
-    imgLoaded
-  ]).then(() => {
-    if (this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-      this.canvas = null;
-    }
+                    setIsLoaded(false);
+                    setIsPlaying(false);
 
-    this.player = new window.SuperGif({
-      gif: img,
-      canvas: this.canvas,
-      auto_play: false,
-      loop_mode: true,
-      progressbar_height: 0,
-    });
+                    if (player) {
+                        player.pause();
+                        setPlayer(null);
+                    }
 
-    this.player.load(() => {
-      this.player.move_to(0);
-      this.slider.min = 0;
-      this.slider.max = this.player.get_length() - 1;
-      this.slider.value = 0;
-      this.slider.disabled = false;
-      this._updateUI();
-    });
-  }).catch((err) => {
-    this.frameInfo.textContent = typeof err === 'string' ? err : 'Failed to load GIF or GIF library.';
-    this.slider.disabled = true;
-    console.error('Load error:', err);
-  });
-}
+                    // Clear existing canvas
+                    const existingCanvas = containerRef.current.querySelector('canvas');
+                    if (existingCanvas) existingCanvas.remove();
 
+                    hiddenImg = new Image();
+                    hiddenImg.crossOrigin = "anonymous";
+                    hiddenImg.src = src;
+                    hiddenImg.style.display = 'none';
+                    //   document.body.appendChild(hiddenImg);
+                    
+                    hiddenImg.onload = () => {
+                        if (!window.SuperGif || !containerRef.current) return;
+                        setOriginalGIFwidth(hiddenImg.naturalWidth);
 
-  _updateUI() {
-    if (!this.player) return;
-    if (!this._isSliding) {
-      this.slider.value = this.player.get_current_frame();
-    }
-    this.frameInfo.textContent = `Frame ${this.player.get_current_frame() + 1} of ${this.player.get_length()}`;
-    // Both play and pause buttons are always visible (modulo display logic if desired)
-  }
+                        superGif = new window.SuperGif({
+                            gif: hiddenImg,
+                            auto_play: false,
+                            loop_mode: true,
+                            progressbar_height: 0
+                        });
 
-  _play() {
-    if (!this.player) return;
-    this.player.play();
-    this._startPlaybackTimer();
-  }
-  _pause() {
-    if (!this.player) return;
-    this.player.pause();
-    this._stopPlaybackTimer();
-    this._updateUI();
-  }
-  _stop() {
-    if (!this.player) return;
-    this.player.pause();
-    this.player.move_to(0);
-    this._stopPlaybackTimer();
-    this._updateUI();
-  }
-  _stepFrame(delta) {
-    if (!this.player) return;
-    this.player.pause();
-    const length = this.player.get_length();
-    const current = this.player.get_current_frame();
-    const nextFrame = (current + delta + length) % length; // wrap around
-    this.player.move_to(nextFrame);
-    this._stopPlaybackTimer();
-    this._updateUI();
-  }
+                        superGif.load(() => {
+                            const canvas = superGif.get_canvas();
+                            canvas.style.display = 'none';
 
-  _gotoFrame(frame) {
-    if (!this.player) return;
-    const length = this.player.get_length();
-    const wrappedFrame = ((frame % length) + length) % length; // wrap around positive
-    this.player.pause();
-    this.player.move_to(wrappedFrame);
-    this._stopPlaybackTimer();
-    this._updateUI();
-  }
+                            // Preserve original GIF dimensions
+                            canvas.width = hiddenImg.naturalWidth;
+                            canvas.height = hiddenImg.naturalHeight;
+                            canvas.style.width = hiddenImg.naturalWidth + 'px';
+                            canvas.style.height = hiddenImg.naturalHeight + 'px';
+                            canvas.style.display = 'block';
+                            canvas.style.border = '2px solid #667eea';
+                            canvas.style.borderRadius = '8px';
+                            canvas.style.cursor = 'pointer';
+                            containerRef.current.appendChild(canvas);
+                            
+                            canvas.style.display = 'block';
+                    
+                            // Click handler: play/pause toggle based on actual SuperGif state
+                            canvas.onclick = () => {
+                                if (!superGif) return;
+                                if (superGif.get_playing()) {
+                                superGif.pause();
+                                } else {
+                                superGif.play();
+                                }
+                                // Update React state as well
+                                setIsPlaying(superGif.get_playing());
+                            };
 
-  _gotoLastFrame() {
-    if (!this.player) return;
-    this.player.pause();
-    this.player.move_to(this.player.get_length() - 1);
-    this._stopPlaybackTimer();
-    this._updateUI();
-  }
+                            setPlayer(superGif);
+                            setFrameCount(superGif.get_length());
+                            setCurrentFrame(0);
+                            setIsLoaded(true);
 
-  _startPlaybackTimer() {
-    if (this._playbackInterval) return;
-    this._playbackInterval = setInterval(() => {
-      if (this.player && this.player.get_playing() && !this._isSliding) {
-        this._updateUI();
-      }
-    }, 60);
-  }
+                            // Auto-play when loaded
+                            setTimeout(() => {
+                                superGif.play();
+                                setIsPlaying(true);
+                            }, 100);
+                        });
+                    };
 
-  _stopPlaybackTimer() {
-    if (this._playbackInterval) {
-      clearInterval(this._playbackInterval);
-      this._playbackInterval = null;
-    }
-  }
-}
+                    hiddenImg.onerror = () => {
+                        setIsLoaded(false);
+                    };
 
-customElements.define('img-gif', ImgGif);
+                    return () => {
+                        if (superGif) superGif.pause();
+                        if (hiddenImg && hiddenImg.parentNode) {
+                        hiddenImg.parentNode.removeChild(hiddenImg);
+                        }
+                    };
+                }, [src]);
+
+                useEffect(() => {
+                    if (!player || !isPlaying) return;
+                    const interval = setInterval(() => {
+                        setCurrentFrame(player.get_current_frame());
+                    }, 60);
+                    return () => clearInterval(interval);
+                }, [player, isPlaying]);
+
+                const gotoFrame = (f) => {
+                    if (!player || !isLoaded) return;
+                    const length = player.get_length();
+                    const wrapped = ((f % length) + length) % length;
+                    player.move_to(wrapped);
+                    setCurrentFrame(wrapped);
+                };
+
+                const stop = () => {
+                    if (!player || !isLoaded) return;
+                    player.pause();
+                    gotoFrame(0);
+                    setIsPlaying(false);
+                };
+
+                const next = () => gotoFrame(currentFrame + 1);
+                const prev = () => gotoFrame(currentFrame - 1);
+                const first = () => gotoFrame(0);
+                const last = () => gotoFrame(frameCount - 1);
+
+                const buttonStyle = {
+                    cursor: 'pointer',
+                    padding: '6px 10px',
+                    fontSize: '1.2rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    color: 'white',
+                    fontFamily: '"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji",system-ui,sans-serif',
+                };
+
+                const sliderStyle = {
+                    width: `${originalGIFwidth - 25}px`,
+                    height: '6px',
+                    margin: '0 0 6px',
+                    cursor: 'pointer',
+                    accentColor: '#667eea',
+                    accentColor: '#ff0000'
+                };
+
+                return React.createElement('div', {
+                    ref: containerRef,
+                    style: {
+                        position: 'relative',
+                        display: 'inline-block',
+                        userSelect: 'none',
+                        minWidth: !isLoaded ? '200px' : 'auto',
+                        minHeight: !isLoaded ? '150px' : 'auto',
+                        backgroundColor: isLoaded ? 'transparent' : '#f0f0f0',
+                    },
+                    onMouseEnter: () => setIsHovered(true),
+                    onMouseLeave: () => setIsHovered(false),
+                },
+
+                // Loading indicator (centered, only while loading)
+                !isLoaded && React.createElement('div', {
+                    style: {
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '1.1rem',
+                    // backgroundColor: 'rgba(255,255,255,0.9)',
+                    color: '#333',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    zIndex: 11,
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                    }
+                }, 'Loading GIF...'),
+
+                // Hover controls with slider
+                isHovered && isLoaded && React.createElement(
+                    'div', {
+                        style: {
+                            position: 'absolute',
+                            top: '6px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px',
+                            // backgroundColor: 'rgba(255,255,255,0.15)',
+                            backgroundColor: 'transparent',
+                            // backdropFilter: 'blur(8px)',
+                            borderRadius: '12px',
+                            padding: '4px 12px 8px',
+                            zIndex: 10,
+                            pointerEvents: 'auto'
+                        }
+                    },
+
+                    // Cute slider above buttons
+                    React.createElement('input', {
+                        type: 'range',
+                        min: 0,
+                        max: frameCount - 1,
+                        value: currentFrame,
+                        onChange: e => {
+                            const frame = Number(e.target.value);
+                            gotoFrame(frame);
+                        },
+                        onInput: e => setCurrentFrame(Number(e.target.value)),
+                        style: sliderStyle
+                    }),
+                    // Buttons row
+                    React.createElement('div', { style: { display: 'flex', gap: '8px' } },
+                        React.createElement('button', { onClick: e => { e.stopPropagation(); first(); }, style: buttonStyle }, '⏮️'),
+                        React.createElement('button', { onClick: e => { e.stopPropagation(); prev(); }, style: buttonStyle }, '⏪'),
+                        React.createElement('button', { onClick: e => { e.stopPropagation(); stop(); }, style: buttonStyle }, '⏹️'),
+                        React.createElement('button', { onClick: e => { e.stopPropagation(); next(); }, style: buttonStyle }, '⏩'),
+                        React.createElement('button', { onClick: e => { e.stopPropagation(); last(); }, style: buttonStyle }, '⏭️')
+                    )
+                ),
+
+                // Frame counter
+                isLoaded && React.createElement('div', {
+                    style: {
+                        position: 'absolute',
+                        bottom: '8px',
+                        right: '10px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        pointerEvents: 'none',
+                        zIndex: 10,
+                    }
+                }, `${currentFrame + 1}/${frameCount}`)
+                );
+            }
+
+            class ImgGifElement extends HTMLElement {
+                constructor() {
+                    super();
+                    this.attachShadow({ mode: 'open' });
+                }
+
+                static get observedAttributes() {
+                    return ['src'];
+                }
+
+                connectedCallback() {
+                    this.render();
+                }
+
+                attributeChangedCallback() {
+                    this.render();
+                }
+
+                render() {
+                    const src = this.getAttribute('src');
+                    if (!src) return;
+
+                    this.shadowRoot.innerHTML = `
+                        <style>
+                        :host {
+                            display: inline-block;
+                            max-width: 100%;
+                            font-family: system-ui, sans-serif;
+                        }
+                        </style>
+                        <div id="react-root"></div>
+                    `;
+                    const root = this.shadowRoot.getElementById('react-root');
+                    window.ReactDOM.createRoot(root).render(React.createElement(GifPlayer, { src }));
+                }
+            }
+            customElements.define('img-gif', ImgGifElement);
+        })
+    .catch(e => console.error('img-gif failed to load dependencies:', e));
+})();
