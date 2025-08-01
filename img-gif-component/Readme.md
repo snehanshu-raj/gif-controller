@@ -66,7 +66,7 @@ jsDelivr may cache files referenced with `@main` for several hours, so sometimes
 
 1. **Check the most recent commit hash** for my file on GitHub:
 [https://github.com/snehanshu-raj/gif-controller/blob/main/img-gif.js](https://github.com/snehanshu-raj/gif-controller/blob/main/img-gif.js)
-2. **Copy the commit hash** (for example, `cfe9ba0` : this is the latest version).
+2. **Copy the commit hash** (for example, `17e4566` : this is the latest version).
 3. **Use the commit hash instead of `main` in your script tag:**
 
 ## 🎮 User Controls
