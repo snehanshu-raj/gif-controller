@@ -141,7 +141,7 @@
                     if (!player || !isLoaded) return;
                     if (isPlaying) {
                         player.pause();
-                        gotoFrame(0);
+                        // gotoFrame(0);
                         setIsPlaying(false);
                     } else {
                         player.play();
